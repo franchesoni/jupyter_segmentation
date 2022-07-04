@@ -1,0 +1,14 @@
+__pycache__/
+css/
+dist/
+docs/
+*.egg-info/
+node_modules/
+package-lock.json
+
+saved_models/
+env_ipyfan/
+design.md
+lib/
+ipyfan/labextension/
+ipyfan/nbextension/
