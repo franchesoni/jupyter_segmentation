@@ -39,9 +39,9 @@ def get_model_gto99():
     return gto99, initialize_z, initialize_y
 
 
-gto99_model, init_z, init_y = get_model_gto99()
-if hasattr(gto99_model, "eval"):
-    gto99_model.eval()
+# gto99_model, init_z, init_y = get_model_gto99()
+# if hasattr(gto99_model, "eval"):
+#     gto99_model.eval()
 
 
 
