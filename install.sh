@@ -1,6 +1,8 @@
 # works with python3.9
 echo "--Start installation-"
 echo "---------------------"
+echo $(python -V 2>&1)
+echo "Is your python version above >=3.9? If yes, you should be fine."
 python -m venv env_ipyfan
 source env_ipyfan/bin/activate
 pip install -r requirements.txt  
@@ -11,4 +13,5 @@ jupyter nbextension install --sys-prefix --symlink --overwrite --py ipyfan
 jupyter nbextension enable --sys-prefix --py ipyfan
 echo "--End installation---"
 echo "---------------------"
+
 
