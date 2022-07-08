@@ -4,19 +4,21 @@ See the example notebook provided in `example/`.
 
 ## Installation instructions
 This project requires npm and nodejs. Install them if you don't already have them.
+Installation steps are given in `install.sh`, for if you want to use your existing environments.
 
-Open a terminal in this same place (ipyfan).
-run (from inside ipyfan): `bash installation.sh`
+If you want to create a new environment, open a terminal in this same place (ipyfan).
+run (from inside ipyfan): `bash install.sh`
 
 This should be it, but if you don't want the interactive image segmentation (IIS) tool, you should comment the corresponding line in the installation script.
 
-## test with `example.ipynb`
+## test with `example1.ipynb`
 ```bash
 source env_ipyfan/bin/activate 
-jupyter notebook example/example.ipynb  
+jupyter notebook example/example1.ipynb  
 ```
 
 If everything goes well, you should be able to `Run all` in the `example.ipynb` and start annotating the demo image.
+Note that bash is not fish.
 
 ## What is currently available?
 ### Tools
@@ -32,7 +34,7 @@ If everything goes well, you should be able to `Run all` in the `example.ipynb` 
 - left click for everything
 - right click for "negative click" on IIS
 
-*when outside superpixel or iis
+*in modes other than superpixel or iis
 
 ## Dev
 ### How to see your Typescript change:

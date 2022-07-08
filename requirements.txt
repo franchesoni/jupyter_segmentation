@@ -3,3 +3,4 @@ numpy
 matplotlib
 scikit-image
 torch
+Cython

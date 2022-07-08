@@ -6,8 +6,11 @@ docs/
 node_modules/
 package-lock.json
 
+.ipynb_checkpoints
+labels/
 saved_models/
 env_ipyfan/
+backend.log
 design.md
 lib/
 ipyfan/labextension/

@@ -32,6 +32,7 @@ def rgba2rgb(rgba, background=(255, 255, 255)):
     rgb[:, :, 2] = b * a + (1.0 - a) * B
     return np.asarray(rgb, dtype="uint8")
 
+
 def unpad(img, padl, padr, padt, padb, channels_last=True):
     if channels_last:
         if 0 < padr:
@@ -52,7 +53,7 @@ def unpad(img, padl, padr, padt, padb, channels_last=True):
         else:
             out = out[..., padb:]
     return out
-        
+
 
 # def unpad(img, padl, padr, channels_last=True):
 #     if channels_last:
@@ -65,6 +66,7 @@ def unpad(img, padl, padr, padt, padb, channels_last=True):
 #             return img[..., padl:-padr, padl:-padr]
 #         else:
 #             return img[..., padl:, padl:]
+
 
 def to_np(img):
     if 3 <= len(img.shape):
@@ -81,12 +83,11 @@ def to_np(img):
     return out
 
 
-
 def norm_fn(x):
     xmin, xmax = x.min(), x.max()
     if xmin == xmax:
         if xmax == 0:
-            return np.zeros_like(x, dtype='float32')
+            return np.zeros_like(x, dtype="float32")
         return x
     else:
         return (x - xmin) / (xmax - xmin)
