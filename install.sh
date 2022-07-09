@@ -1,4 +1,3 @@
-# works with python3.9
 echo "--Start installation-"
 echo "---------------------"
 echo $(python -V 2>&1)
@@ -15,5 +14,3 @@ echo "--End installation---"
 echo "---------------------"
 cd example
 jupyter notebook example_single_image.ipynb
-
-
