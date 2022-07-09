@@ -44,17 +44,22 @@ IIS:
 - right click for "negative click" on IIS
 
 
-## Dev
-### How to see your Typescript change:
+
+## Buzzwords
+This artificial intelligence (AI) assisted image annotation tool works locally and is awesome. It integrates great interactive image segmentation algorithms and a superpixel based segmentation. It is highly customizable by using Python (or Typescript). The objective is to quickly annotate segmentations or masks in images so to train deep learning computer vision models models.
+
+# Acknowledgment
+Inspired by [Ian Hunt-Isaak's annotation tool](https://github.com/ianhi/ipysegment)
+
+# Dev
+## How to see your Typescript change:
 To continuously monitor the project for changes and automatically:
 ```bash
 npm run watch
 ```
 After a change wait for the build to finish and then refresh your browser and the changes should take effect.
 
-### How to see your Python change:
+## How to see your Python change:
 Restart the kernel of the notebook.
 
 
-# Acknowledgment
-Inspired by [Ian Hunt-Isaak's annotation tool](https://github.com/ianhi/ipysegment)
