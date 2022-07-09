@@ -12,4 +12,4 @@ backend.log
 design.md
 lib/
 ipyfan/labextension/
-ipyfan/nbextension/static/
+ipyfan/nbextension/static/index*
