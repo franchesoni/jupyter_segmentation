@@ -142,7 +142,9 @@ class bdist_egg_disabled(bdist_egg):
         )
 
 
-def create_cmdclass(prerelease_cmd=None, package_data_spec=None, data_files_spec=None):
+def create_cmdclass(
+    prerelease_cmd=None, package_data_spec=None, data_files_spec=None
+):
     """Create a command class with the given optional prerelease class.
 
     Parameters
@@ -328,7 +330,12 @@ def mtime(path):
 
 
 def install_npm(
-    path=None, build_dir=None, source_dir=None, build_cmd="build", force=False, npm=None
+    path=None,
+    build_dir=None,
+    source_dir=None,
+    build_cmd="build",
+    force=False,
+    npm=None,
 ):
     """Return a Command for managing an npm installation.
 
@@ -377,7 +384,9 @@ def install_npm(
                 )
                 return
 
-            if force or is_stale(node_modules, pjoin(node_package, "package.json")):
+            if force or is_stale(
+                node_modules, pjoin(node_package, "package.json")
+            ):
                 log.info(
                     "Installing build dependencies with npm.  This may "
                     "take a while..."
@@ -427,7 +436,11 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
     # Additionally check that `file` is not a directory, as on Windows
     # directories pass the os.access check.
     def _access_check(fn, mode):
-        return os.path.exists(fn) and os.access(fn, mode) and not os.path.isdir(fn)
+        return (
+            os.path.exists(fn)
+            and os.access(fn, mode)
+            and not os.path.isdir(fn)
+        )
 
     # Short circuit. If we're given a full path which matches the mode
     # and it exists, we're done here.
