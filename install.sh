@@ -13,5 +13,6 @@ jupyter nbextension install --sys-prefix --symlink --overwrite --py ipyfan
 jupyter nbextension enable --sys-prefix --py ipyfan
 echo "--End installation---"
 echo "---------------------"
+jupyter notebook example/example_single_image.ipynb
 
 
