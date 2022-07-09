@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Copyright (c) Ian Hunt-Isaak.
+# Copyright (c) Franco Marchesoni.
 # Distributed under the terms of the Modified BSD License.
 
 from .segment import segmenter, FullSegmenter, logger

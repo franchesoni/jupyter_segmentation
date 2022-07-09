@@ -1,24 +1,28 @@
 # The ultimate annotation tool in a Jupyter Notebook!
 
-See the example notebook provided in `example/`.
+Follows:
+- How to install
+- How to use
+- Examples
 
 ## Installation instructions
-This project requires npm and nodejs. Install them if you don't already have them.
-Installation steps are given in `install.sh`, for if you want to use your existing environments.
+This project requires Python>=3.9, npm and nodejs. Their installation is on you.
 
-If you want to create a new environment, open a terminal in this same place (ipyfan).
-run (from inside ipyfan): `bash install.sh`
+If you want to create a fresh new virtual environment, open a terminal in this same place (ipyfan).
+run (from inside ipyfan): `bash install.sh`. 
 
-This should be it, but if you don't want the interactive image segmentation (IIS) tool, you should comment the corresponding line in the installation script.
+`install.sh` contains simple installation steps, thus using an already existing virtual environment is as simple as commenting the first few lines.
 
-## test with `example1.ipynb`
+note: this works for bash. Yet, you can customize `install.sh` so it works with fish too. If it doesn't work, please open an issue.
+
+## test with `example_single_image.ipynb`
 ```bash
 source env_ipyfan/bin/activate 
-jupyter notebook example/example1.ipynb  
+cd example
+jupyter notebook example_single_image.ipynb  
 ```
 
-If everything goes well, you should be able to `Run all` in the `example.ipynb` and start annotating the demo image.
-Note that bash is not fish.
+If everything goes well, you should be able to `Restart and run all` in the example notebook and start annotating the demo image.
 
 ## What is currently available?
 ### Tools
@@ -29,12 +33,16 @@ Note that bash is not fish.
 - superpixel
 - iis = interactive image segmentation
 ### Controls
-- *right/middle click to pan
-- *scroll to zoom
+Everywhere:
 - left click for everything
+
+Only on simple tools:
+- right/middle click to pan
+- scroll to zoom
+
+IIS:
 - right click for "negative click" on IIS
 
-*in modes other than superpixel or iis
 
 ## Dev
 ### How to see your Typescript change:

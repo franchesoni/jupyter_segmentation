@@ -1,4 +1,4 @@
-// Copyright (c) Ian Hunt-Isaak
+// Copyright (c) franchesoni
 // Distributed under the terms of the Modified BSD License.
 
 import { Application, IPlugin } from '@phosphor/application';
