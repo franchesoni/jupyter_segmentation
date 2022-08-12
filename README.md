@@ -6,7 +6,7 @@ Follows:
 - Examples
 
 ## Installation instructions
-This project requires Python>=3.9, npm and nodejs. Their installation is on you.
+This project requires Python>=3.9, npm and nodejs (LTS, version 16). Their installation is on you.
 
 If you want to create a fresh new virtual environment, open a terminal in this same place (ipyfan).
 run (from inside ipyfan): `bash install.sh`. 
@@ -61,5 +61,8 @@ After a change wait for the build to finish and then refresh your browser and th
 
 ## How to see your Python change:
 Restart the kernel of the notebook.
+
+## To-do
+- avoid crashes if neg pos clicking the same place
 
 
