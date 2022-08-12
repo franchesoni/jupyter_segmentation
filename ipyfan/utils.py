@@ -10,6 +10,8 @@ from io import BytesIO
 
 import numpy as np
 
+def str_description(x):
+    return f"{x.shape, x.min(), x.max(), x.dtype}"
 
 # def image_bytes_to_array(im_bytes):
 #     """Turn raw image bytes into a NumPy array."""
@@ -149,3 +151,10 @@ def to_camel_case(snake_str):
     """Snake case to Camel case translator."""
     components = snake_str.split("_")
     return components[0] + "".join(x.title() for x in components[1:])
+
+def make_psd(sigma):
+    C = (sigma + sigma.T) / 2
+    eigval, eigvec = np.linalg.eigh(C)
+    eigval = eigval * (0 < eigval)
+    sigma_psm = eigvec @ np.diag(eigval) @ eigvec.T
+    return sigma_psm
