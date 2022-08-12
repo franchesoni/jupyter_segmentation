@@ -1,5 +1,9 @@
 ipywidgets==7.7.1
 scikit-image==0.19.3
+scikit-learn
 matplotlib==3.5.2
+torchvision
+tqdm
+iio  
 torch==1.12.0
 Cython==0.29.30
