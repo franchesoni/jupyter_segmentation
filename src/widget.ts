@@ -16,7 +16,8 @@ import { LassoTool } from './tools/lasso';
 import { BrushTool } from './tools/brush';
 import { EraserTool } from './tools/eraser';
 import { IISTool } from './tools/iis';
-import { SuperpixTool } from './tools/superpix';
+import { PosNegScribbles } from './tools/posnegscribbles';
+import { PosScribbles } from './tools/posscribbles';
 
 function serializeImageData(image: ImageData) {
   console.log('serializing');
@@ -182,8 +183,8 @@ export class segmentModel extends DOMWidgetModel {
 
   //////////////////////////////////////////////////////////////////////////////
   private _clear(): void {  // clears proposals and previews
-    this.pcs = [];  // always clear list of clicks
-    this.ncs = [];
+    this.pcs = new Set();  // always clear list of clicks
+    this.ncs = new Set();
     // clear all canvases (except img,ref,ann)
     this.propIContext.clearRect(0, 0, this.propICanvas.width, this.propICanvas.height);
     this.propLContext.clearRect(0, 0, this.propLCanvas.width, this.propLCanvas.height);
@@ -193,8 +194,8 @@ export class segmentModel extends DOMWidgetModel {
       view.pushImgLToBackend();  // sync what we are seeing (first time)
       view.pushAnnToBackend();  // sync what we are seeing (first time)
     })
-    this.set('pcs', this.pcs)
-    this.set('ncs', this.ncs)
+    this.set('pcs', Array.from(this.pcs))
+    this.set('ncs', Array.from(this.ncs))
     this.save_changes()
     console.log('clear')
   }
@@ -320,8 +321,13 @@ export class segmentModel extends DOMWidgetModel {
   alpha: number;
   tool: number;
   toolSize: number;
-  pcs: number[][];
-  ncs: number[][];
+  pcs: Set<number[]>;
+  ncs: Set<number[]>;
+
+  s_x: number;
+  s_y: number;
+  s_width: number;
+  s_height: number;
 
   views: Dict<Promise<segmentView>>;
 }
@@ -412,21 +418,16 @@ export class segmentView extends DOMWidgetView {
   _drawClicks(): void {
     // draws the clicks on the preview canvas
     // for each click, draw a circle on the class canvas
-    var clickColor = 'rgb(0, 255, 0)';
-    for (let i = 0; i < this.model.pcs.length; i++) {
-      var click = this.model.pcs[i];
-      // little square
+    let clickColor = 'rgb(0, 255, 0)';
+    this.model.pcs.forEach((pc: number[]) => {
       this.previewLContext.fillStyle = clickColor;
-      this.previewLContext.fillRect(click[0] - 5, click[1] - 5, 10, 10);
-    }
-    if (this.model.tool != 4) {
-      var clickColor = 'rgb(255, 0, 0)';
-      for (let i = 0; i < this.model.ncs.length; i++) {
-        var click = this.model.ncs[i];
-        this.previewLContext.fillStyle = clickColor;
-        this.previewLContext.fillRect(click[0] - 5, click[1] - 5, 10, 10);
-      }
-    }
+      this.previewLContext.fillRect(pc[0] - 5, pc[1] - 5, 10, 10);
+    })
+    clickColor = 'rgb(255, 0, 0)';
+    this.model.ncs.forEach((nc: number[]) => {
+      this.previewLContext.fillStyle = clickColor;
+      this.previewLContext.fillRect(nc[0] - 5, nc[1] - 5, 10, 10);
+    })
   }
 
 
@@ -451,7 +452,7 @@ export class segmentView extends DOMWidgetView {
   // using this to refer to the Drawing rather than
   // the clicked element
   private _wheel = (e: WheelEvent): void => {
-    if (this.model.tool !== 3 && this.model.tool !== 4) {
+    if (this.model.tool < 3) {
       let scale = 1;
       if (e.deltaY < 0) {
         scale = 1.1;
@@ -510,10 +511,10 @@ export class segmentView extends DOMWidgetView {
 
 
   private _mouseDown = (e: MouseEvent): void => {
-    if (e.button === 1 || (e.button === 2 && this.model.tool !== 3 && this.model.tool !== 4)) {  // middle click = pan
+    if ((e.button === 1 || e.button === 2) && (this.model.tool < 3)) {  // middle click = pan
       this.mouseDownPan(e);  // pan with middle button or, if outside iis/spix mode, with right button too 
     }
-    else if ((e.button === 0) || (e.button === 2 && this.model.tool === 3)) {  // left click
+    else if ((e.button === 0) || ((e.button === 2) && (2 < this.model.tool))) {  // left click
       this.tools[this.model.tool].mouseDown(e, this);
     }
   }
@@ -582,6 +583,11 @@ export class segmentView extends DOMWidgetView {
       this.displayLCanvas.width,
       this.displayLCanvas.height
     );
+    this.model.set('s_x', this._Sx);
+    this.model.set('s_y', this._Sy);
+    this.model.set('s_width', this._sWidth);
+    this.model.set('s_height', this._sHeight);
+
   }
 
   _drawInAnnAlias(sourceCanvas: HTMLCanvasElement): void {
@@ -616,8 +622,16 @@ export class segmentView extends DOMWidgetView {
   private displayWidth = 1000;
   private displayHeight = 1000;
 
-  // private toolIsActive: boolean;
-  tools = [new LassoTool(), new BrushTool(), new EraserTool(), new IISTool(), new SuperpixTool];
+  tools = [
+    new LassoTool(),
+    new BrushTool(),
+    new EraserTool(),
+    new IISTool(),
+    new PosNegScribbles(),  // superpixels
+    new PosNegScribbles(),  // clusters
+    new PosScribbles(),  // cosine
+    new PosNegScribbles(),  // gaussian
+  ];
 }
 
 // taken from ipycanvas

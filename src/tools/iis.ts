@@ -17,16 +17,17 @@ export class IISTool extends AnnotationTool {
         } else {
             if (e.button === 0) {  // left click = positive click
                 // append click position to list
-                view.model.pcs = [...view.model.pcs, [mouseX, mouseY]];
+                view.model.pcs.add([mouseX, mouseY]);
+                // view.model.pcs = [...view.model.pcs, [mouseX, mouseY]];
             }
             else if (e.button === 2) {  // right click = negative click
                 // append click position to list
-                view.model.ncs = [...view.model.ncs, [mouseX, mouseY]];
+                view.model.ncs.add([mouseX, mouseY]);
             }
             view.previewLContext.clearRect(0, 0, view.previewLCanvas.width, view.previewLCanvas.height);
             view._drawClicks();
-            view.model.set('pcs', view.model.pcs)
-            view.model.set('ncs', view.model.ncs)
+            view.model.set('pcs', Array.from(view.model.pcs))
+            view.model.set('ncs', Array.from(view.model.ncs))
             view.model.save_changes()
         }
 

@@ -11,7 +11,15 @@ TODO: Add module docstring
 from ipywidgets import DOMWidget, Output
 
 from ._frontend import module_name, module_version
-from .utils import binary_image, norm_fn, unpad, rgba2rgb, to_np
+from .utils import (
+    binary_image,
+    norm_fn,
+    unpad,
+    rgba2rgb,
+    to_np,
+    make_psd,
+    str_description,
+)
 from numpy import frombuffer, uint8, copy
 import zlib
 from ipydatawidgets import (
@@ -21,24 +29,14 @@ from ipydatawidgets import (
 )
 import numpy as np
 
+import sklearn.mixture
+import sklearn.cluster
 import skimage.segmentation
 import skimage.transform
-import skimage.filters
-import skimage.morphology
+import scipy.signal
 
 import math
 import torch
-
-# iislib_path = Path(__file__).parent.parent.parent / "iislib/iislib"
-# sys.path.append(str(tests_path))
-# tests_path = Path(__file__).parent.parent.parent / "iislib/tests"
-# sys.path.append(str(tests_path))
-
-
-# sys.path.append("/home/franchesoni/mine/creations/phd/projects/stego/STEGO/src/")
-# from stego_apply import stego_apply
-# import torchvision.transforms as T
-# from PIL import Image
 
 from traitlets import Bytes, CInt, Unicode, Float, List
 from traitlets import observe
@@ -75,7 +73,6 @@ labels_serialization = {
     "from_json": deserializeImage,
 }
 
-
 debug_view = Output(layout={"border": "1px solid black"})
 
 
@@ -94,6 +91,12 @@ class segmenter(DOMWidget):
     size = CInt(10).tag(sync=True)
     pcs = List([]).tag(sync=True)
     ncs = List([]).tag(sync=True)
+    s_x, s_y, s_width, s_height = (
+        Float(0.0).tag(sync=True),
+        Float(0.0).tag(sync=True),
+        Float(0.0).tag(sync=True),
+        Float(0.0).tag(sync=True),
+    )
 
     # underlying info for labels - this handles the syncing to ts
     _labels = Bytes(default_value=None, allow_none=True, read_only=True).tag(
@@ -140,6 +143,7 @@ class segmenter(DOMWidget):
         self.iis_model = iis_model
         self.iis_state = {}
         self.superpix_state = {}
+        self.cluster_state = {}
 
     # push: propL, prevPropL, annI
     # receive: annI, annL, imgL, tool, alpha, size, pcs, ncs
@@ -154,14 +158,27 @@ class segmenter(DOMWidget):
         "prevPropL",
         "annL",
         "imgL",
+        "s_x",
     )
     def _log_any_change(self, change):
         logger.info(f"changed: {change.name}")
 
     # COMMANDS
-    def set_image(self, im, ref=None):
+    def set_image(self, im, ref=None, feats=None):
         logger.debug("set_image")
         self.image = im
+        self.feats = im if feats is None else feats
+        self.s_x, self.s_y, self.s_width, self.s_height = (
+            0,
+            0,
+            im.shape[0],
+            im.shape[1],
+        )
+        self.featsL = self.feats.copy()
+        assert (
+            self.feats.shape[0] == im.shape[0]
+            and self.feats.shape[1] == im.shape[1]
+        ), "feats should be HxWxF"
         self.ref = ref
 
         if ref is None:
@@ -229,18 +246,49 @@ class segmenter(DOMWidget):
             logger.exception("useReference failed")
             raise err
 
+    @observe("s_x")
+    def _layoutCoordsChanged(self, change):
+        logger.debug("layoutCoordsChanged")
+        logger.debug(self.s_x)
+        logger.debug(self.s_y)
+        logger.debug(self.s_height)
+        logger.debug(self.s_width)
+
+        try:
+            xi, xf, yi, yf = (
+                int(self.s_x),
+                int(self.s_x + self.s_width),
+                int(self.s_y),
+                int(self.s_y + self.s_height),
+            )
+            pyi, pyf, pxi, pxf = (
+                max(-yi, 0),
+                max(0, yf - self.feats.shape[0]),
+                max(-xi, 0),
+                max(0, xf - self.feats.shape[1]),
+            )
+            self.featsL = np.pad(self.feats, ((pyi, pyf), (pxi, pxf), (0, 0)))[
+                yi + pyi : yf + pyi, xi + pxi : xf + pxi
+            ]
+        except Exception as err:
+            logger.debug(self.feats.shape)
+            logger.debug(self.featsL.shape)
+            logger.debug(f"{xi}, {xf}, {yi}, {yf}, {pyi}, {pyf}, {pxi}, {pxf}")
+            logger.exception("layoutCoordsChanged failed")
+            raise err
+
     # Event handlers
     @observe("tool")
     def _tool_changed(self, change):
         logger.info("changed tool")
         self.clear_canvases()
         self.run_tools(mode="prevPropL")
-        # self.run_tools(mode='propL')
 
     @observe("size")
     def _size_changed(self, change):
         logger.info("size changed, calling _tool_changed")
         self.run_tools(mode="prevPropL")
+        self.run_tools(mode="propL")
 
     @observe("annL")
     def _annL_changed(self, change):
@@ -308,6 +356,58 @@ class segmenter(DOMWidget):
                 self.superpix_preview()  # (!) there are internal states
             elif mode == "propL":
                 self.superpix_propose()
+        elif self.tool == 5:
+            if mode == "prevPropL":
+                self.cluster_preview()
+            elif mode == "propL":
+                self.cluster_propose()
+        elif self.tool == 6:
+            if mode == "prevPropL":
+                self.cosine_preview()
+            elif mode == "propL":
+                self.cosine_propose()
+        elif self.tool == 7:
+            if mode == "prevPropL":
+                self.gaussian_preview()
+            elif mode == "propL":
+                self.gaussian_propose()
+
+    def cosine_preview(self):
+        logger.info("cosine preview start")
+        pass
+
+    def cluster_preview(self):
+        logger.info("cluster preview start")
+        try:
+            # clus = sklearn.mixture.GaussianMixture(
+            #     n_components=self.size, max_iter=20
+            # )
+            clus = sklearn.cluster.KMeans(
+                n_clusters=self.size, n_init=1, max_iter=20
+            )
+
+            segs = clus.fit_predict(
+                self.featsL.reshape(-1, self.featsL.shape[-1])
+            ).reshape(self.featsL.shape[:2])
+            segs = scipy.signal.medfilt2d(
+                segs, kernel_size=7
+            )  # remove some noise
+            segs = skimage.transform.resize(segs, self.imgL.shape[:2], order=0)
+            logger.info("ended cluster fit")
+
+            self.cluster_state["segs"] = segs
+            logger.info(self.featsL.shape)
+            logger.info(self.cluster_state["segs"].shape)
+            logger.info(self.imgL.shape)
+            seg_borders = skimage.segmentation.find_boundaries(segs)
+
+            prev = np.zeros_like(self.imgL)
+            prev[seg_borders] = np.array([0, 0, 255, 255])
+            self.prevPropL = prev
+            logger.info("cluster preview")
+        except Exception as err:
+            logger.exception("Failed running cluster")
+            raise err
 
     # Superpix
     def superpix_preview(self):
@@ -320,9 +420,8 @@ class segmenter(DOMWidget):
             #     enforce_connectivity=1,
             # )  # internal variable used when clicking
             segs = skimage.segmentation.felzenszwalb(
-                self.imgL, scale=self.size * 20, min_size=self.size * 20
+                self.imgL, scale=self.size * 10, min_size=self.size * 10
             )  # internal variable used when clicking
-            # segs = self.stego_apply_casted(self.imgL)
 
             self.superpix_state["segs"] = segs
 
@@ -337,21 +436,152 @@ class segmenter(DOMWidget):
             logger.exception("Failed running superpix")
             raise err
 
+    def gaussian_preview(self):
+        pass
+
+    def gaussian_propose(self):
+        logger.info("gaussian propose start")
+        try:
+            proposal = np.zeros_like(self.imgL, dtype=float)[
+                ..., 0
+            ]  # one channel only
+            nfeatsL = skimage.transform.resize(
+                self.featsL, self.imgL.shape[:2], order=0
+            )
+            nfeatsL = norm_fn(nfeatsL.astype(float))
+            xs = nfeatsL[
+                [pc[1] for pc in self.pcs], [pc[0] for pc in self.pcs]
+            ].astype(
+                float
+            )  # N x C
+            ys = nfeatsL[
+                [nc[1] for nc in self.ncs], [nc[0] for nc in self.ncs]
+            ].astype(
+                float
+            )  # M x C
+            n, m = xs.shape[0], ys.shape[0]
+
+            mu = ((xs.sum(0) - ys.sum(0)) / (n - m))[None]  # 1xC
+            xsc, ysc = xs - mu, (
+                ys - mu
+            )  # / 100  # np.linalg.norm(ys - mu, axis=1)[:, None]
+            sigma_inv = np.linalg.pinv((xsc.T @ xsc - ysc.T @ ysc) / (n - m))
+            pixels = nfeatsL.reshape(-1, nfeatsL.shape[-1])
+            distances = (
+                (((pixels - mu) @ sigma_inv) * (pixels - mu))
+                .sum(1)
+                .reshape(nfeatsL.shape[:2])
+            )
+            distances = norm_fn(np.sqrt(distances - distances.min()))
+            distances = skimage.exposure.equalize_hist(distances)
+            proposal = (255 * (distances < (self.size / 100))).astype(
+                np.uint8
+            )  # thresholded, 1 channel
+            proposal = np.repeat(proposal[..., None], 4, axis=2).astype(
+                np.uint8
+            )  # 4 channel
+            self.propL = proposal
+        except Exception as err:
+            logger.exception("gaussian_propose failed")
+            raise err
+
+    def cosine_propose(self):
+        logger.info("cosine propose start")
+        try:
+            proposal = np.zeros_like(self.imgL, dtype=float)[
+                ..., 0
+            ]  # one channel only
+            self.featsL[self.featsL.sum(2) == 0] = np.eye(
+                self.featsL.shape[-1]
+            )[-1] * (self.featsL[self.featsL != 0].min())
+            norm_factor = np.linalg.norm(self.featsL, axis=2)[..., None]
+            norm_featsL = self.featsL.copy() / norm_factor
+            norm_featsL = skimage.transform.resize(
+                norm_featsL, self.imgL.shape[:2], order=0
+            )
+            for i, pc in enumerate(self.pcs):
+                ref_feat = norm_featsL[pc[1], pc[0]][None, None]
+                proposal = proposal + (ref_feat * norm_featsL).sum(
+                    axis=2
+                ) / len(self.pcs)
+            proposal = norm_fn(skimage.exposure.equalize_hist(proposal))
+            proposal = (255 * ((self.size / 100) < proposal)).astype(
+                np.uint8
+            )  # thresholded, 1 channel
+            proposal = np.repeat(proposal[..., None], 4, axis=2).astype(
+                np.uint8
+            )  # 4 channel
+            self.propL = proposal
+        except Exception as err:
+            logger.exception("cosine_propose failed")
+            raise err
+
+    def cluster_propose(self):
+        logger.info("cluster propose start")
+        try:
+            segs = self.cluster_state["segs"]
+            selected_labels = {}
+
+            for pc in self.pcs:
+                label = segs[pc[1], pc[0]]
+                if label in selected_labels:
+                    selected_labels[label] += 1
+                else:
+                    selected_labels[label] = 1
+            for nc in self.ncs:
+                label = segs[nc[1], nc[0]]
+                if label in selected_labels:
+                    selected_labels[label] -= 1
+                else:
+                    selected_labels[label] = -1
+
+            prop = self.propL.copy()
+            for label in selected_labels:
+                if selected_labels[label] > 0:
+                    prop[segs == label] = np.array(
+                        [255, 255, 255, 255]
+                    )  # green clicks white regions
+                elif selected_labels[label] <= 0:
+                    prop[segs == label] = np.array([0, 0, 0, 0])
+            self.propL = prop
+            logger.info("Created new proposal! (spix)")
+            logger.info(f"shapes: {segs.shape} {self.propL.shape}")
+        except Exception as err:
+            logger.exception("Failed running cluster")
+            raise err
+
     def superpix_propose(self):
         logger.info("annotating superpix...")
         try:
             segs = self.superpix_state["segs"]
-            selected_labels = []
+            selected_labels = {}
+
             for pc in self.pcs:
-                selected_labels.append(segs[pc[1], pc[0]])
+                label = segs[pc[1], pc[0]]
+                if label in selected_labels:
+                    selected_labels[label] += 1
+                else:
+                    selected_labels[label] = 1
+            for nc in self.ncs:
+                label = segs[nc[1], nc[0]]
+                if label in selected_labels:
+                    selected_labels[label] -= 1
+                else:
+                    selected_labels[label] = -1
+
             prop = self.propL.copy()
             for label in selected_labels:
-                prop[segs == label] = np.array(
-                    [0, 255, 0, 255]
-                )  # green clicks green regions
+                if selected_labels[label] > 0:
+                    prop[segs == label] = np.array(
+                        [0, 255, 0, 255]
+                    )  # green clicks green regions
+                elif selected_labels[label] <= 0:
+                    prop[segs == label] = np.array(
+                        [0, 0, 0, 0]
+                    )  # green clicks green regions
             self.propL = prop
             logger.info("Created new proposal! (spix)")
-            logger.info(f"shapes: {segs.shape} {self.propL.shape}")
+            logger.debug(f"shapes: {segs.shape} {self.propL.shape}")
         except Exception as err:
             logger.exception("Failed running superpix")
             raise err
@@ -464,7 +694,7 @@ class segmenter(DOMWidget):
                     == self.iis_state["z"]["prev_output"].shape[-2]
                 ), "image and prev should be square and same size"
             else:
-                keys = self.iis_state['z'].keys()
+                keys = self.iis_state["z"].keys()
                 raise ValueError(
                     f"z is not what is expected, with keys {keys}"
                 )
@@ -523,24 +753,35 @@ class segmenter(DOMWidget):
 
 
 class FullSegmenter:
-    def __init__(self, iis_model, curr_im, curr_ref, layout_size=500):
+    def __init__(
+        self, iis_model, curr_im, curr_ref=None, feats=None, layout_size=500
+    ):
         w = segmenter(iis_model)
         w.layout.width = f"{layout_size}px"  # if too small, enlarge your image
         w.layout.height = f"{layout_size}px"
-        w.set_image(curr_im, curr_ref)
+        w.set_image(curr_im, curr_ref, feats)
 
         alpha_slider = widgets.FloatSlider(
-            value=0.3, min=0, max=1, step=0.05, description="alpha mask"
+            value=0.3, min=0, max=1, step=0.05, description="Alpha mask"
         )
         widgets.jslink((alpha_slider, "value"), (w, "alpha"))
 
         size_slider = widgets.IntSlider(
-            value=10, min=1, max=100, step=1, description="tool size"
+            value=10, min=1, max=100, step=1, description="Tool slider"
         )
         widgets.jslink((size_slider, "value"), (w, "size"))
 
         tool_selector = widgets.RadioButtons(
-            options=["lasso", "brush", "eraser", "iis", "superpixel"],
+            options=[
+                "Lasso",
+                "Brush",
+                "Eraser",
+                "IIS",
+                "Superpixel",
+                "Find similar - cluster",
+                "Find similar - cosine",
+                "Find similar - gaussian",
+            ],
             description="Tool",
         )
         widgets.jslink((tool_selector, "index"), (w, "tool"))
