@@ -25,13 +25,19 @@ jupyter notebook example_single_image.ipynb
 If everything goes well, you should be able to `Restart and run all` in the example notebook and start annotating the demo image.
 
 ## What is currently available?
+For more detail, read the `user_guide.md`
 ### Tools
 - image viewer with zoom and panning
-- lasso 
-- brush
-- eraser
-- superpixel
-- iis = interactive image segmentation
+- Lasso 
+- Brush
+- Eraser
+- Superpixels
+- IIS = interactive image segmentation
+- Unsupervised segmentation (clustering)
+- Threshold on mean cosine similarity
+- Gaussian fit
+
+
 ### Controls
 Everywhere:
 - left click for everything
@@ -40,9 +46,16 @@ Only on simple tools:
 - right/middle click to pan
 - scroll to zoom
 
-IIS:
-- right click for "negative click" on IIS
+Other tools:
+- right click for "negative click"
 
+All tools except Lasso and IIS:
+- tool slider
+
+Final masks are violet.
+Masks that are not violet are proposals.
+Proposals are made violet via the "Use proposal" option.
+All modifications (except eraser) are only additive.
 
 
 ## Buzzwords

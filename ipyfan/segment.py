@@ -392,6 +392,7 @@ class segmenter(DOMWidget):
             segs = scipy.signal.medfilt2d(
                 segs, kernel_size=7
             )  # remove some noise
+            segs = skimage.measure.label(segs+1, connectivity=1)
             segs = skimage.transform.resize(segs, self.imgL.shape[:2], order=0)
             logger.info("ended cluster fit")
 
@@ -778,7 +779,7 @@ class FullSegmenter:
                 "Eraser",
                 "IIS",
                 "Superpixel",
-                "Find similar - cluster",
+                "Cluster",
                 "Find similar - cosine",
                 "Find similar - gaussian",
             ],
