@@ -75,7 +75,13 @@ After a change wait for the build to finish and then refresh your browser and th
 ## How to see your Python change:
 Restart the kernel of the notebook.
 
-## To-do
+## To-do / feature requests
+- display image filename
+- load previously annotated mask as reference
+- increase display size
+- create universal `read_image` function
+- allow pan and zoom while using IIS (and more generally, advanced tools)
 - avoid crashes if neg pos clicking the same place
+- make gaussian estimation more robust
 
 
