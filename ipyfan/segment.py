@@ -392,7 +392,7 @@ class segmenter(DOMWidget):
             segs = scipy.signal.medfilt2d(
                 segs, kernel_size=7
             )  # remove some noise
-            segs = skimage.measure.label(segs+1, connectivity=1)
+            segs = skimage.measure.label(segs + 1, connectivity=1)
             segs = skimage.transform.resize(segs, self.imgL.shape[:2], order=0)
             logger.info("ended cluster fit")
 
@@ -462,11 +462,15 @@ class segmenter(DOMWidget):
             )  # M x C
             n, m = xs.shape[0], ys.shape[0]
 
-            mu = ((xs.sum(0) - ys.sum(0)) / (n - m))[None]  # 1xC
-            xsc, ysc = xs - mu, (
-                ys - mu
-            )  # / 100  # np.linalg.norm(ys - mu, axis=1)[:, None]
-            sigma_inv = np.linalg.pinv((xsc.T @ xsc - ysc.T @ ysc) / (n - m))
+            mu, sigma_inv = self.get_mu_sigma_inv(xs, ys, n, m)
+            # # get mu and sigma
+            # mu = ((xs.sum(0) - ys.sum(0)) / (n - m))[None]  # 1xC
+            # xsc, ysc = xs - mu, (
+            #     ys - mu
+            # )  # / 100  # np.linalg.norm(ys - mu, axis=1)[:, None]
+            # sigma_inv = np.linalg.pinv((xsc.T @ xsc - ysc.T @ ysc) / (n - m))
+            # # check psd
+
             pixels = nfeatsL.reshape(-1, nfeatsL.shape[-1])
             distances = (
                 (((pixels - mu) @ sigma_inv) * (pixels - mu))
@@ -485,6 +489,54 @@ class segmenter(DOMWidget):
         except Exception as err:
             logger.exception("gaussian_propose failed")
             raise err
+
+    def _alpha_lr_mle(self, alpha, xs, ys, n, m):
+        # get mu and sigma
+        mu = ((xs.sum(0) - alpha * ys.sum(0)) / (n - alpha * m))[None]  # 1xC
+        xsc, ysc = xs - mu, (
+            ys - mu
+        )  # / 100  # np.linalg.norm(ys - mu, axis=1)[:, None]
+        sigma = (xsc.T @ xsc - alpha * ysc.T @ ysc) / (n - alpha * m)
+        return mu, sigma
+
+    def _is_pos_def(self, sigma):
+        retval = np.all(np.linalg.eigvals(sigma) > 0)
+        # logger.debug(f"pos def = {retval}")
+        # if not retval:
+        #     logger.debug(f"eigvals = {np.linalg.eigvals(sigma) }")
+        #     logger.debug(f"sigma = {sigma}")
+        return retval
+
+    def get_mu_sigma_inv(self, xs, ys, n, m):
+        alpha = 1
+        # logger.debug(f"s = 0, alpha = {alpha}")
+        mu, sigma = self._alpha_lr_mle(alpha, xs, ys, n, m)
+        if m == 0 or self._is_pos_def(sigma):
+            # logger.debug("ret")
+            return mu, np.linalg.pinv(sigma)
+
+        else:
+            low, high = 0, 1
+            s = 1
+            while True:
+                alpha = (low + high) / 2
+                # logger.debug(f"s = {s}, alpha = {alpha}")
+                mu, sigma = self._alpha_lr_mle(alpha, xs, ys, n, m)
+                if self._is_pos_def(sigma):
+                    low = alpha
+                else:
+                    high = alpha
+                # logger.debug(f"low = {low}, high = {high}")
+                max_error = 2 ** (-s)
+                if (alphap := math.floor(m * (low - max_error)) / m) == (
+                    math.floor(m * (low + max_error)) / m
+                ):
+                    mu, sigma = self._alpha_lr_mle(alphap, xs, ys, n, m)
+                    # logger.debug("ret")
+                    # logger.debug(f"eigvals = {np.linalg.eigvals(sigma) }")
+                    # logger.debug(f"sigma = {sigma}")
+                    return mu, np.linalg.pinv(sigma)
+                s = s + 1
 
     def cosine_propose(self):
         logger.info("cosine propose start")
