@@ -1,7 +1,6 @@
 # The ultimate image annotation tool in a Jupyter Notebook!
 
-
-https://user-images.githubusercontent.com/24411007/187539567-1cda6ac8-d8e9-4e1d-b700-eb1d8c2ea75e.mp4
+![jup](https://user-images.githubusercontent.com/24411007/187540629-d553db88-be75-4c7d-8093-a97219690b0d.gif)
 
 
 Follows:
