@@ -76,12 +76,19 @@ After a change wait for the build to finish and then refresh your browser and th
 
 Restart the kernel of the notebook.
 
+## Changelog
+- 2022.08.30: make gaussian estimation more robust
+- 2022.08.30: increase display size by passing `layout` parameter
+
 ## To-do / feature requests
+- add GIF
 
 - display image filename
+- start with the full image 
+- add another layer for:
+  - eraser siluette
+- undo button
 - load previously annotated mask as reference
-- increase display size
 - create universal `read_image` function
 - allow pan and zoom while using IIS (and more generally, advanced tools)
 - avoid crashes if neg pos clicking the same place
-- make gaussian estimation more robust
