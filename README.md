@@ -82,10 +82,11 @@ Restart the kernel of the notebook.
 ## Changelog
 - 2022.08.30: make gaussian estimation more robust
 - 2022.08.30: increase display size by passing `layout` parameter
+- 2022.08.30: add GIF
 
 ## To-do / feature requests
-- add GIF
-
+- allow pan and zoom while using IIS (and more generally, advanced tools)
+- add DINO feature extractor
 - display image filename
 - start with the full image 
 - add another layer for:
@@ -93,5 +94,4 @@ Restart the kernel of the notebook.
 - undo button
 - load previously annotated mask as reference
 - create universal `read_image` function
-- allow pan and zoom while using IIS (and more generally, advanced tools)
 - avoid crashes if neg pos clicking the same place

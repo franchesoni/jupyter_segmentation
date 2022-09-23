@@ -4,6 +4,7 @@ docs/
 *.egg-info/
 node_modules/
 
+concho_valley/
 .ipynb_checkpoints
 labels/
 saved_models/
