@@ -179,10 +179,10 @@ class segmenter(DOMWidget):
             self.feats.shape[0] == im.shape[0]
             and self.feats.shape[1] == im.shape[1]
         ), "feats should be HxWxF"
-        self.ref = ref
 
         if ref is None:
             ref = np.zeros((im.shape[0], im.shape[1], 4))
+        self.annI = ref
 
         assert im.shape[:2] == ref.shape[:2], "Incompatible image and ref"
         image_metadata, image_buffer = binary_image(im)
@@ -197,7 +197,7 @@ class segmenter(DOMWidget):
 
     def reset(self):
         logger.debug("reset")
-        im, ref = self.image, self.ref
+        im, ref = self.image, self.annI
         if ref is None:
             ref = np.zeros((im.shape[0], im.shape[1], 4))
         self.propL = np.zeros_like(self.imgL).astype(np.uint8)
