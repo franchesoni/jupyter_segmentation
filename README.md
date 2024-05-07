@@ -2,7 +2,7 @@
 
 ![jup](https://user-images.githubusercontent.com/24411007/187540629-d553db88-be75-4c7d-8093-a97219690b0d.gif)
 
-
+## NEW: we have a minimalist web-based tool for points and boxes [here](https://franchesoni.github.io/minimalist-annotation/)!
 Follows:
 
 - How to install
